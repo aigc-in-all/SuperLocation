@@ -1,4 +1,4 @@
-package com.example.android.location.loc.amap;
+package com.example.android.location.core.amap;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -8,10 +8,10 @@ import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
 import com.example.android.location.MainApplication;
-import com.example.android.location.loc.AbsLocationManager;
-import com.example.android.location.loc.LocationErrorType;
-import com.example.android.location.loc.LocationListener;
-import com.example.android.location.loc.LocationType;
+import com.example.android.location.core.AbsLocationManager;
+import com.example.android.location.core.LocationErrorType;
+import com.example.android.location.core.LocationListener;
+import com.example.android.location.core.LocationType;
 
 /**
  * Created by heqingbao on 2017/3/15.

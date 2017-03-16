@@ -1,11 +1,11 @@
-package com.example.android.location.loc.baidu;
+package com.example.android.location.core.baidu;
 
 import android.support.annotation.NonNull;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.Poi;
-import com.example.android.location.loc.Location;
-import com.example.android.location.loc.LocationErrorType;
+import com.example.android.location.core.Location;
+import com.example.android.location.core.LocationErrorType;
 
 import java.util.List;
 

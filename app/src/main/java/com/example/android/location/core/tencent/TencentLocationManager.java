@@ -1,12 +1,12 @@
-package com.example.android.location.loc.tencent;
+package com.example.android.location.core.tencent;
 
 import android.util.Log;
 
 import com.example.android.location.MainApplication;
-import com.example.android.location.loc.AbsLocationManager;
-import com.example.android.location.loc.LocationErrorType;
-import com.example.android.location.loc.LocationListener;
-import com.example.android.location.loc.LocationType;
+import com.example.android.location.core.AbsLocationManager;
+import com.example.android.location.core.LocationErrorType;
+import com.example.android.location.core.LocationListener;
+import com.example.android.location.core.LocationType;
 import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationRequest;

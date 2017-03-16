@@ -9,14 +9,14 @@ import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.TextView;
 
-import com.example.android.location.loc.Location;
-import com.example.android.location.loc.LocationErrorType;
-import com.example.android.location.loc.LocationListener;
-import com.example.android.location.loc.LocationManager;
-import com.example.android.location.loc.LocationType;
-import com.example.android.location.loc.amap.AmapLocationManager;
-import com.example.android.location.loc.baidu.BaiduLocationManager;
-import com.example.android.location.loc.tencent.TencentLocationManager;
+import com.example.android.location.core.Location;
+import com.example.android.location.core.LocationErrorType;
+import com.example.android.location.core.LocationListener;
+import com.example.android.location.core.LocationManager;
+import com.example.android.location.core.LocationType;
+import com.example.android.location.core.amap.AmapLocationManager;
+import com.example.android.location.core.baidu.BaiduLocationManager;
+import com.example.android.location.core.tencent.TencentLocationManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

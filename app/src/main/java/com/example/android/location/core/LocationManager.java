@@ -1,11 +1,11 @@
-package com.example.android.location.loc;
+package com.example.android.location.core;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import com.example.android.location.loc.amap.AmapLocationManager;
-import com.example.android.location.loc.baidu.BaiduLocationManager;
-import com.example.android.location.loc.tencent.TencentLocationManager;
+import com.example.android.location.core.amap.AmapLocationManager;
+import com.example.android.location.core.baidu.BaiduLocationManager;
+import com.example.android.location.core.tencent.TencentLocationManager;
 
 /**
  * Created by heqingbao on 2017/3/15.

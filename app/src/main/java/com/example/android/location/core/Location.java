@@ -1,4 +1,4 @@
-package com.example.android.location.loc;
+package com.example.android.location.core;
 
 /**
  * Created by heqingbao on 2017/3/15.

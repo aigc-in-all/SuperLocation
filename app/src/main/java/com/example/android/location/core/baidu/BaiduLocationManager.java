@@ -1,4 +1,4 @@
-package com.example.android.location.loc.baidu;
+package com.example.android.location.core.baidu;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -8,10 +8,10 @@ import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.example.android.location.MainApplication;
-import com.example.android.location.loc.AbsLocationManager;
-import com.example.android.location.loc.LocationErrorType;
-import com.example.android.location.loc.LocationListener;
-import com.example.android.location.loc.LocationType;
+import com.example.android.location.core.AbsLocationManager;
+import com.example.android.location.core.LocationErrorType;
+import com.example.android.location.core.LocationListener;
+import com.example.android.location.core.LocationType;
 
 /**
  * Created by heqingbao on 2017/3/15.
