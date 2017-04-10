@@ -1,9 +1,9 @@
-package com.example.android.location.core.tencent;
+package com.hqb.android.location.core.tencent;
 
 import android.support.annotation.NonNull;
 
-import com.example.android.location.core.Location;
-import com.example.android.location.core.LocationErrorType;
+import com.hqb.android.location.Location;
+import com.hqb.android.location.LocationErrorType;
 import com.tencent.map.geolocation.TencentLocation;
 
 /**

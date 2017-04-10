@@ -9,14 +9,14 @@ import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.TextView;
 
-import com.example.android.location.core.Location;
-import com.example.android.location.core.LocationErrorType;
-import com.example.android.location.core.LocationListener;
-import com.example.android.location.core.LocationManager;
-import com.example.android.location.core.LocationType;
-import com.example.android.location.core.amap.AmapLocationManager;
-import com.example.android.location.core.baidu.BaiduLocationManager;
-import com.example.android.location.core.tencent.TencentLocationManager;
+import com.hqb.android.location.Location;
+import com.hqb.android.location.LocationErrorType;
+import com.hqb.android.location.LocationListener;
+import com.hqb.android.location.LocationManager;
+import com.hqb.android.location.LocationType;
+import com.hqb.android.location.core.amap.AmapLocationManager;
+import com.hqb.android.location.core.baidu.BaiduLocationManager;
+import com.hqb.android.location.core.tencent.TencentLocationManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,25 +38,25 @@ public class MainActivity extends Activity {
     // 使用高德定位
     public void clickOnAmapLocation(View view) {
         resetViewState(LocationType.AMAP);
-        AmapLocationManager.getInstance().requestLocationOnce(listener);
+        AmapLocationManager.getInstance(MainApplication.getContext()).requestLocationOnce(listener);
     }
 
     // 使用百度定位
     public void clickOnBaiduLocation(View view) {
         resetViewState(LocationType.BAIDU);
-        BaiduLocationManager.getInstance().requestLocationOnce(listener);
+        BaiduLocationManager.getInstance(MainApplication.getContext()).requestLocationOnce(listener);
     }
 
     // 使用腾讯定位
     public void clickOnTencentLocation(View view) {
         resetViewState(LocationType.TENCENT);
-        TencentLocationManager.getInstance().requestLocationOnce(listener);
+        TencentLocationManager.getInstance(MainApplication.getContext()).requestLocationOnce(listener);
     }
 
     // All In One
     public void clickOnAllLocation(View view) {
         resetViewState(null);
-        LocationManager.getInstance().requestLocationAllInOne(listener);
+        LocationManager.getInstance(MainApplication.getContext()).requestLocationOnceAllInOne(listener);
     }
 
     private void resetViewState(LocationType locationType) {

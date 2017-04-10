@@ -1,11 +1,11 @@
-package com.example.android.location.core.amap;
+package com.hqb.android.location.core.amap;
 
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.amap.api.location.AMapLocation;
-import com.example.android.location.core.Location;
-import com.example.android.location.core.LocationErrorType;
+import com.hqb.android.location.Location;
+import com.hqb.android.location.LocationErrorType;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;

@@ -1,5 +1,6 @@
-package com.example.android.location.core.amap;
+package com.hqb.android.location.core.amap;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -7,11 +8,10 @@ import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
-import com.example.android.location.MainApplication;
-import com.example.android.location.core.AbsLocationManager;
-import com.example.android.location.core.LocationErrorType;
-import com.example.android.location.core.LocationListener;
-import com.example.android.location.core.LocationType;
+import com.hqb.android.location.AbsLocationManager;
+import com.hqb.android.location.LocationErrorType;
+import com.hqb.android.location.LocationListener;
+import com.hqb.android.location.LocationType;
 
 /**
  * Created by heqingbao on 2017/3/15.
@@ -26,14 +26,15 @@ public class AmapLocationManager extends AbsLocationManager {
 
     private AMapLocationClient locationClient = null;
 
-    public static AmapLocationManager getInstance() {
+    public static AmapLocationManager getInstance(Context context) {
         if (instance == null) {
-            instance = new AmapLocationManager();
+            instance = new AmapLocationManager(context);
         }
         return instance;
     }
 
-    private AmapLocationManager() {
+    private AmapLocationManager(Context context) {
+        super(context);
     }
 
     @NonNull
@@ -57,12 +58,14 @@ public class AmapLocationManager extends AbsLocationManager {
 
     @Override
     public void requestLocationOnce(LocationListener listener) {
+        super.requestLocationOnce(listener);
+
         // 每次定位后销毁client，需要再创建一个新的！
-        locationClient = new AMapLocationClient(MainApplication.getContext());
+        locationClient = new AMapLocationClient(context);
         locationClient.setLocationOption(getDefaultOption());
 
         // start
-        locationClient.setLocationListener(new InnerLocationListener(listener));
+        locationClient.setLocationListener(new InnerLocationListener());
         locationClient.startLocation();
     }
 
@@ -84,37 +87,27 @@ public class AmapLocationManager extends AbsLocationManager {
 
     private class InnerLocationListener implements AMapLocationListener {
 
-        private LocationListener listener;
-
-        public InnerLocationListener(LocationListener listener) {
-            this.listener = listener;
-        }
-
         @Override
         public void onLocationChanged(AMapLocation loc) {
             Log.d(TAG, AmapLocationUtil.getLocationStr(loc));
 
             stopLocation();
 
-            if (listener == null) {
-                return;
-            }
-
             if (loc == null) {
                 String result = "定位失败，loc is null";
                 Log.d(TAG, result);
-                listener.onError(LocationType.AMAP, LocationErrorType.UNKNOWN, result);
+                notifyLocationFail(LocationType.AMAP, LocationErrorType.UNKNOWN, result);
                 return;
             }
 
             if (loc.getErrorCode() != 0) {
                 LocationErrorType errorType = AmapLocationUtil.getErrorTypeByCode(loc.getErrorCode());
                 String errorReason = AmapLocationUtil.getReasonByCode(loc.getErrorCode());
-                listener.onError(LocationType.AMAP, errorType, errorReason);
+                notifyLocationFail(LocationType.AMAP, errorType, errorReason);
                 return;
             }
 
-            listener.onReceiveLocation(LocationType.AMAP, AmapLocationUtil.parse(loc));
+            notifyLocationSuccess(LocationType.AMAP, AmapLocationUtil.parse(loc));
         }
     }
 }

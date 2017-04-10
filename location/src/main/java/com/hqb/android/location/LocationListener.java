@@ -1,4 +1,4 @@
-package com.example.android.location.core;
+package com.hqb.android.location;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;

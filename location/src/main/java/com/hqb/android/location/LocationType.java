@@ -1,4 +1,4 @@
-package com.example.android.location.core;
+package com.hqb.android.location;
 
 /**
  * Created by heqingbao on 2017/3/15.

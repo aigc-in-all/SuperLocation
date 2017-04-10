@@ -1,5 +1,6 @@
-package com.example.android.location.core.baidu;
+package com.hqb.android.location.core.baidu;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -7,11 +8,10 @@ import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
-import com.example.android.location.MainApplication;
-import com.example.android.location.core.AbsLocationManager;
-import com.example.android.location.core.LocationErrorType;
-import com.example.android.location.core.LocationListener;
-import com.example.android.location.core.LocationType;
+import com.hqb.android.location.AbsLocationManager;
+import com.hqb.android.location.LocationErrorType;
+import com.hqb.android.location.LocationListener;
+import com.hqb.android.location.LocationType;
 
 /**
  * Created by heqingbao on 2017/3/15.
@@ -26,14 +26,15 @@ public class BaiduLocationManager extends AbsLocationManager {
     private LocationClient locationClient;
     private InnerLocationListener innerLocationListener;
 
-    public static BaiduLocationManager getInstance() {
+    public static BaiduLocationManager getInstance(Context context) {
         if (instance == null) {
-            instance = new BaiduLocationManager();
+            instance = new BaiduLocationManager(context);
         }
         return instance;
     }
 
-    private BaiduLocationManager() {
+    private BaiduLocationManager(Context context) {
+        super(context);
     }
 
     @NonNull
@@ -44,7 +45,7 @@ public class BaiduLocationManager extends AbsLocationManager {
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
 
         //可选，默认gcj02，设置返回的定位结果坐标系，官方Demo中用的是bd09ll
-        option.setCoorType("gcj02");
+        option.setCoorType("gcj02"); // 国测局02年发布的坐标体系，又称『火星坐标』
 
         //可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
         option.setScanSpan(0);
@@ -78,11 +79,13 @@ public class BaiduLocationManager extends AbsLocationManager {
 
     @Override
     public void requestLocationOnce(LocationListener listener) {
-        locationClient = new LocationClient(MainApplication.getContext());
+        super.requestLocationOnce(listener);
+
+        locationClient = new LocationClient(context);
 
         locationClient.setLocOption(getDefaultOption());
 
-        innerLocationListener = new InnerLocationListener(listener);
+        innerLocationListener = new InnerLocationListener();
         locationClient.registerLocationListener(innerLocationListener);
 
         locationClient.start();
@@ -103,40 +106,32 @@ public class BaiduLocationManager extends AbsLocationManager {
         locationClient = null;
     }
 
+    // 注意回调在子线程!!!
+    // Bug：连续两次（或多次）调用requestLocationUpdates，重复几次，onReceiveLocation的回调次数太多，无规律。。。
     private class InnerLocationListener implements BDLocationListener {
 
-        private LocationListener listener;
 
-        public InnerLocationListener(LocationListener listener) {
-            this.listener = listener;
-        }
-
-        // 注意回调在子线程!!!
         @Override
         public void onReceiveLocation(BDLocation bdLocation) {
             Log.d(TAG, BaiduLocationUtil.getLocStr(bdLocation));
 
             stopLocation();
 
-            if (listener == null) {
-                return;
-            }
-
             if (bdLocation == null) {
-                listener.onError(LocationType.BAIDU, LocationErrorType.UNKNOWN, "定位失败，location == null");
+                notifyLocationFail(LocationType.BAIDU, LocationErrorType.UNKNOWN, "定位失败，location == null");
                 return;
             }
 
             // 61: GPS定位结果，GPS定位成功
             // 161: 网络定位结果，网络定位成功
             if (bdLocation.getLocType() == 61 || bdLocation.getLocType() == 161) {
-                listener.onReceiveLocation(LocationType.BAIDU, BaiduLocationUtil.parse(bdLocation));
+                notifyLocationSuccess(LocationType.BAIDU, BaiduLocationUtil.parse(bdLocation));
                 return;
             }
 
             LocationErrorType errorType = BaiduLocationUtil.getErrorTypeByCode(bdLocation.getLocType());
             String errorReason = BaiduLocationUtil.getReasonByCode(bdLocation.getLocType());
-            listener.onError(LocationType.BAIDU, errorType, errorReason);
+            notifyLocationFail(LocationType.BAIDU, errorType, errorReason);
         }
 
         // 回调连接wifi是否是移动热点

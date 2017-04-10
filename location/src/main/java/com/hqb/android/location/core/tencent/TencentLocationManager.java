@@ -1,12 +1,12 @@
-package com.example.android.location.core.tencent;
+package com.hqb.android.location.core.tencent;
 
+import android.content.Context;
 import android.util.Log;
 
-import com.example.android.location.MainApplication;
-import com.example.android.location.core.AbsLocationManager;
-import com.example.android.location.core.LocationErrorType;
-import com.example.android.location.core.LocationListener;
-import com.example.android.location.core.LocationType;
+import com.hqb.android.location.AbsLocationManager;
+import com.hqb.android.location.LocationErrorType;
+import com.hqb.android.location.LocationListener;
+import com.hqb.android.location.LocationType;
 import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationRequest;
@@ -30,21 +30,23 @@ public class TencentLocationManager extends AbsLocationManager {
     private boolean wifiStatusDenied;// wifi模块被关闭
     private boolean gpsStatusDenied;// gps模块被关闭
 
-    public static TencentLocationManager getInstance() {
+    public static TencentLocationManager getInstance(Context context) {
         if (instance == null) {
-            instance = new TencentLocationManager();
+            instance = new TencentLocationManager(context);
         }
         return instance;
     }
 
-    private TencentLocationManager() {
-        locationManager = com.tencent.map.geolocation.TencentLocationManager.getInstance(MainApplication.getContext());
+    private TencentLocationManager(Context context) {
+        super(context);
+        locationManager = com.tencent.map.geolocation.TencentLocationManager.getInstance(context);
         // 设置坐标系为 gcj-02, 缺省坐标为 gcj-02, 所以通常不必进行如下调用
         locationManager.setCoordinateType(com.tencent.map.geolocation.TencentLocationManager.COORDINATE_TYPE_GCJ02);
     }
 
     @Override
     public void requestLocationOnce(LocationListener listener) {
+        super.requestLocationOnce(listener);
 
         resetStatus();
 
@@ -65,14 +67,12 @@ public class TencentLocationManager extends AbsLocationManager {
 
         locParams = request.toString() + ", 坐标系=" + TencentLocationUtil.toString(locationManager.getCoordinateType());
 
-        innerLocationListener = new InnerLocationListener(listener);
+        innerLocationListener = new InnerLocationListener();
         int result = locationManager.requestLocationUpdates(request, innerLocationListener);
 
         if (result != 0) {
             // 注册失败
-            if (listener != null) {
-                listener.onError(LocationType.TENCENT, LocationErrorType.UNKNOWN, TencentLocationUtil.initResultByCode(result));
-            }
+            notifyLocationFail(LocationType.TENCENT, LocationErrorType.UNKNOWN, TencentLocationUtil.initResultByCode(result));
         }
     }
 
@@ -96,13 +96,8 @@ public class TencentLocationManager extends AbsLocationManager {
     }
 
     // 测试结果：先回调三次：onStatusUpdate，再回调onLocationChanged
+    // Bug：连续两次调用requestLocationUpdates，重复两次，第三次不会调用onLocationChanged方法，而是下一次调用requestLocationUpdates的时候一起回调。。。
     private class InnerLocationListener implements TencentLocationListener {
-
-        private LocationListener listener;
-
-        public InnerLocationListener(LocationListener listener) {
-            this.listener = listener;
-        }
 
         @Override
         public void onLocationChanged(TencentLocation location, int error, String reason) {
@@ -111,18 +106,18 @@ public class TencentLocationManager extends AbsLocationManager {
 
             stopLocation();
 
-            if (listener == null) {
+            if (listeners.isEmpty()) {
                 return;
             }
 
             if (error == TencentLocation.ERROR_OK) { // 定位成功
-                listener.onReceiveLocation(LocationType.TENCENT, TencentLocationUtil.parse(location));
+                notifyLocationSuccess(LocationType.TENCENT, TencentLocationUtil.parse(location));
                 return;
             }
 
             LocationErrorType errorType = TencentLocationUtil.getErrorTypeByCode(error);
             String errorReason = TencentLocationUtil.getReasonByErrorCode(error);
-            listener.onError(LocationType.TENCENT, errorType, errorReason);
+            notifyLocationFail(LocationType.TENCENT, errorType, errorReason);
         }
 
         /**
@@ -156,13 +151,10 @@ public class TencentLocationManager extends AbsLocationManager {
                           at android.location.LocationManager$ListenerTransport._handleMessage(LocationManager.java:299)
 
                 暂不清楚异常原因。
-                这里简单对listener置null，待onLocationChanged方法回调的时候做处理！！！
+                这里调用完notifyLocationFail后会移除所有的listener，待onLocationChanged方法回调的时候做处理！！！
                 */
 
-                if (listener != null) {
-                    listener.onError(LocationType.TENCENT, LocationErrorType.NO_PERMISSION, "蜂窝、WIFI、GPS模块都没打开");
-                    listener = null;
-                }
+                notifyLocationFail(LocationType.TENCENT, LocationErrorType.NO_PERMISSION, "蜂窝、WIFI、GPS模块都没打开");
             }
         }
     }
