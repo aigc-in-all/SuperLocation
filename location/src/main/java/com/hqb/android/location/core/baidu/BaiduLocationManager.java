@@ -1,6 +1,8 @@
 package com.hqb.android.location.core.baidu;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -25,6 +27,8 @@ public class BaiduLocationManager extends AbsLocationManager {
 
     private LocationClient locationClient;
     private InnerLocationListener innerLocationListener;
+
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
 
     public static BaiduLocationManager getInstance(Context context) {
         if (instance == null) {
@@ -112,26 +116,41 @@ public class BaiduLocationManager extends AbsLocationManager {
 
 
         @Override
-        public void onReceiveLocation(BDLocation bdLocation) {
+        public void onReceiveLocation(final BDLocation bdLocation) {
             Log.d(TAG, BaiduLocationUtil.getLocStr(bdLocation));
 
             stopLocation();
 
             if (bdLocation == null) {
-                notifyLocationFail(LocationType.BAIDU, LocationErrorType.UNKNOWN, "定位失败，location == null");
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        notifyLocationFail(LocationType.BAIDU, LocationErrorType.UNKNOWN, "定位失败，location == null");
+                    }
+                });
                 return;
             }
 
             // 61: GPS定位结果，GPS定位成功
             // 161: 网络定位结果，网络定位成功
             if (bdLocation.getLocType() == 61 || bdLocation.getLocType() == 161) {
-                notifyLocationSuccess(LocationType.BAIDU, BaiduLocationUtil.parse(bdLocation));
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        notifyLocationSuccess(LocationType.BAIDU, BaiduLocationUtil.parse(bdLocation));
+                    }
+                });
                 return;
             }
 
-            LocationErrorType errorType = BaiduLocationUtil.getErrorTypeByCode(bdLocation.getLocType());
-            String errorReason = BaiduLocationUtil.getReasonByCode(bdLocation.getLocType());
-            notifyLocationFail(LocationType.BAIDU, errorType, errorReason);
+            final LocationErrorType errorType = BaiduLocationUtil.getErrorTypeByCode(bdLocation.getLocType());
+            final String errorReason = BaiduLocationUtil.getReasonByCode(bdLocation.getLocType());
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    notifyLocationFail(LocationType.BAIDU, errorType, errorReason);
+                }
+            });
         }
 
         // 回调连接wifi是否是移动热点
