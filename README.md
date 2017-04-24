@@ -3,7 +3,7 @@
 
 ### 截图
 
-![](/screenshot/screenshot.png)
+![](/screenshot/screenshot.jpg)
 
 ### 参考
 
