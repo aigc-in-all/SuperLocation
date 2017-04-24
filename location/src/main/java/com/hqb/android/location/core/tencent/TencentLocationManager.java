@@ -1,6 +1,8 @@
 package com.hqb.android.location.core.tencent;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.hqb.android.location.AbsLocationManager;
@@ -10,6 +12,9 @@ import com.hqb.android.location.LocationType;
 import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationRequest;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by heqingbao on 2017/3/15.
@@ -30,6 +35,11 @@ public class TencentLocationManager extends AbsLocationManager {
     private boolean wifiStatusDenied;// wifi模块被关闭
     private boolean gpsStatusDenied;// gps模块被关闭
 
+    private Timer timer;
+    private volatile boolean isRequesting;
+
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
+
     public static TencentLocationManager getInstance(Context context) {
         if (instance == null) {
             instance = new TencentLocationManager(context);
@@ -45,7 +55,7 @@ public class TencentLocationManager extends AbsLocationManager {
     }
 
     @Override
-    public void requestLocationOnce(LocationListener listener) {
+    public void requestLocationOnce(final LocationListener listener) {
         super.requestLocationOnce(listener);
 
         resetStatus();
@@ -62,8 +72,8 @@ public class TencentLocationManager extends AbsLocationManager {
         // 禁用缓存
         request.setAllowCache(false);
 
-        // 允许使用GPS定位
-        request.setAllowGPS(true);
+        // 是否允许使用GPS定位
+        request.setAllowGPS(false);
 
         locParams = request.toString() + ", 坐标系=" + TencentLocationUtil.toString(locationManager.getCoordinateType());
 
@@ -74,10 +84,40 @@ public class TencentLocationManager extends AbsLocationManager {
             // 注册失败
             notifyLocationFail(LocationType.TENCENT, LocationErrorType.UNKNOWN, TencentLocationUtil.initResultByCode(result));
         }
+
+        // 连续几次定位请求后，回调非常慢，但是，在请求过程中，再次requestLocation会很快得到结果。
+        // 所以这里间隔5秒后仍未回调，就自动再触发一次。经测试可以满足大部分需求。
+        if (isRequesting) {
+            return;
+        }
+
+        timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (isRequesting) {
+                    Log.d(TAG, "超时，重试！");
+
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            requestLocationOnce(listener);
+                        }
+                    });
+                }
+            }
+        }, 5000);
+
+        isRequesting = true;
     }
 
     @Override
     public void stopLocation() {
+        isRequesting = false;
+        if (timer != null) {
+            timer.cancel();
+        }
+
         if (locationManager == null) {
             return;
         }

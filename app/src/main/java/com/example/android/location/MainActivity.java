@@ -1,14 +1,18 @@
 package com.example.android.location;
 
 import android.app.Activity;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.hqb.android.location.Location;
 import com.hqb.android.location.LocationErrorType;
 import com.hqb.android.location.LocationListener;
@@ -24,6 +28,7 @@ import java.util.Date;
 public class MainActivity extends Activity {
 
     private TextView tvResultView;
+    private ImageView imgView;
 
     private Handler handler = new Handler(Looper.getMainLooper());
 
@@ -33,6 +38,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         tvResultView = (TextView) findViewById(R.id.tv_result);
+        imgView = (ImageView) findViewById(R.id.img);
     }
 
     // 使用高德定位
@@ -65,6 +71,7 @@ public class MainActivity extends Activity {
         } else {
             tvResultView.setText(String.format("正在使用[%s]定位...", locationType.getDesc()));
         }
+        imgView.setImageDrawable(new ColorDrawable(Color.TRANSPARENT));
     }
 
     private void displayLocation(LocationType locationType, Location location) {
@@ -78,6 +85,10 @@ public class MainActivity extends Activity {
         sb.append("\n").append("时间：").append(sdf.format(new Date(location.getTime())));
 
         tvResultView.setText(sb.toString());
+
+        // 显示图片
+        String url = String.format("http://restapi.amap.com/v3/staticmap?key=40601a1363f910ccebb1e1f291248969&markers=large,0xffa500,A:%s,%s&zoom=17&size=1000*1000", location.getLongitude(), location.getLatitude());
+        Glide.with(this).load(url).centerCrop().crossFade().into(imgView);
     }
 
     LocationListener listener = new LocationListener() {
