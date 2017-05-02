@@ -17,29 +17,46 @@
             android:orientation="vertical"
             android:padding="12dp">
 
+            <RadioGroup
+                android:id="@+id/radio_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="高德定位" />
+
+                <RadioButton
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="百度定位" />
+
+                <RadioButton
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="腾讯定位" />
+            </RadioGroup>
+
+            <!-- 高德 -->
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="clickOnAmapLocation"
-                android:text="高德定位" />
+                android:onClick="clickOnLocationByOnceBtn"
+                android:text="单次定位" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="clickOnBaiduLocation"
-                android:text="百度" />
+                android:onClick="clickOnLocationByContinuousBtn"
+                android:text="持续定位" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="clickOnTencentLocation"
-                android:text="腾讯定位" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:onClick="clickOnAllLocation"
-                android:text="All In One" />
+                android:onClick="clickOnLocationByQuickBtn"
+                android:text="快速定位" />
 
             <TextView
                 android:id="@+id/tv_result"

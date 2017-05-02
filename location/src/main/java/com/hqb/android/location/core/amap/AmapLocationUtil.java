@@ -75,11 +75,13 @@ public class AmapLocationUtil {
 
     @NonNull
     public static Location parse(@NonNull AMapLocation location) {
-        double longitude = location.getLongitude();
-        double latitude = location.getLatitude();
-        String address = location.getAddress();
-
-        Location loc = new Location(longitude, latitude, address);
+        Location loc = new Location(location.getLongitude(), location.getLatitude());
+        loc.setProvince(location.getProvince());
+        loc.setCity(location.getCity());
+        loc.setDistrict(location.getDistrict());
+        loc.setStreet(location.getStreet());
+        loc.setStreetNo(location.getStreetNum());
+        loc.setAddress(location.getAddress());
         loc.setTime(location.getTime());
         return loc;
     }

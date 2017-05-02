@@ -6,10 +6,13 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -18,15 +21,13 @@ import com.hqb.android.location.LocationErrorType;
 import com.hqb.android.location.LocationListener;
 import com.hqb.android.location.LocationManager;
 import com.hqb.android.location.LocationType;
-import com.hqb.android.location.core.amap.AmapLocationManager;
-import com.hqb.android.location.core.baidu.BaiduLocationManager;
-import com.hqb.android.location.core.tencent.TencentLocationManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class MainActivity extends Activity {
 
+    private RadioGroup radioGroup;
     private TextView tvResultView;
     private ImageView imgView;
 
@@ -37,32 +38,50 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        radioGroup = (RadioGroup) findViewById(R.id.radio_group);
+        radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, @IdRes int checkedId) {
+                RadioButton btn = (RadioButton) group.findViewById(checkedId);
+                int index = group.indexOfChild(btn);
+                switch (index) {
+                    case 0:
+                        LocationManager.getInstance(MainActivity.this).setLocationType(LocationType.AMAP);
+                        break;
+                    case 1:
+                        LocationManager.getInstance(MainActivity.this).setLocationType(LocationType.BAIDU);
+                        break;
+                    case 2:
+                        LocationManager.getInstance(MainActivity.this).setLocationType(LocationType.TENCENT);
+                        break;
+                    default:
+                        throw new RuntimeException("Unsupported location type " + index);
+                }
+            }
+        });
+        radioGroup.check(radioGroup.getChildAt(0).getId());
+
         tvResultView = (TextView) findViewById(R.id.tv_result);
         imgView = (ImageView) findViewById(R.id.img);
     }
 
-    // 使用高德定位
-    public void clickOnAmapLocation(View view) {
-        resetViewState(LocationType.AMAP);
-        AmapLocationManager.getInstance(MainApplication.getContext()).requestLocationOnce(listener);
+    // 单次定位
+    public void clickOnLocationByOnceBtn(View view) {
+        resetViewState(LocationManager.getInstance(this).getLocationType());
+        LocationManager.getInstance(MainApplication.getContext()).requestLocationOnce(listener);
     }
 
-    // 使用百度定位
-    public void clickOnBaiduLocation(View view) {
-        resetViewState(LocationType.BAIDU);
-        BaiduLocationManager.getInstance(MainApplication.getContext()).requestLocationOnce(listener);
+    // 持续定位
+    public void clickOnLocationByContinuousBtn(View view) {
+        tvResultView.setText(String.format("正在使用[%s]持续定位...", LocationManager.getInstance(this).getLocationType().getDesc()));
+        imgView.setImageDrawable(new ColorDrawable(Color.TRANSPARENT));
+        LocationManager.getInstance(this).requestLocationContinuous();
     }
 
-    // 使用腾讯定位
-    public void clickOnTencentLocation(View view) {
-        resetViewState(LocationType.TENCENT);
-        TencentLocationManager.getInstance(MainApplication.getContext()).requestLocationOnce(listener);
-    }
-
-    // All In One
-    public void clickOnAllLocation(View view) {
-        resetViewState(null);
-        LocationManager.getInstance(MainApplication.getContext()).requestLocationOnceAllInOne(listener);
+    // 快速定位
+    public void clickOnLocationByQuickBtn(View view) {
+        resetViewState(LocationManager.getInstance(this).getLocationType());
+        LocationManager.getInstance(MainApplication.getContext()).requestLocation(listener);
     }
 
     private void resetViewState(LocationType locationType) {
@@ -120,4 +139,10 @@ public class MainActivity extends Activity {
             });
         }
     };
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        LocationManager.getInstance(this).stopLocation();
+    }
 }

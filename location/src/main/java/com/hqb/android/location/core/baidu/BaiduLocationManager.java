@@ -11,8 +11,8 @@ import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.hqb.android.location.AbsLocationManager;
+import com.hqb.android.location.Location;
 import com.hqb.android.location.LocationErrorType;
-import com.hqb.android.location.LocationListener;
 import com.hqb.android.location.LocationType;
 
 /**
@@ -27,6 +27,8 @@ public class BaiduLocationManager extends AbsLocationManager {
 
     private LocationClient locationClient;
     private InnerLocationListener innerLocationListener;
+
+    private volatile boolean isRequesting;
 
     private Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -52,7 +54,7 @@ public class BaiduLocationManager extends AbsLocationManager {
         option.setCoorType("gcj02"); // 国测局02年发布的坐标体系，又称『火星坐标』
 
         //可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
-        option.setScanSpan(0);
+        option.setScanSpan(SCAN_INTERVAL);
 
         //可选，设置是否需要地址信息，默认不需要
         option.setIsNeedAddress(true);
@@ -81,9 +83,23 @@ public class BaiduLocationManager extends AbsLocationManager {
         return option;
     }
 
+    @NonNull
     @Override
-    public void requestLocationOnce(LocationListener listener) {
-        super.requestLocationOnce(listener);
+    protected LocationType getLocationType() {
+        return LocationType.BAIDU;
+    }
+
+    @Override
+    public void startLocationContinuous() {
+
+        Log.d(TAG, ">>> 开始持续请求位置（如果是单次定位，位置请求成功后会关闭请求） <<<");
+
+        if (isRequesting) {
+            Log.d(TAG, "正在请求位置，略过本次请求！！！");
+            return;
+        }
+
+        isRequesting = true;
 
         locationClient = new LocationClient(context);
 
@@ -96,7 +112,18 @@ public class BaiduLocationManager extends AbsLocationManager {
     }
 
     @Override
+    public void startLocationOnce() {
+        Log.d(TAG, ">>> 开始请求位置 <<<");
+
+        startLocationContinuous();
+    }
+
+    @Override
     public void stopLocation() {
+        Log.d(TAG, ">>> 停止请求位置 <<<");
+
+        isRequesting = false;
+
         if (locationClient == null || !locationClient.isStarted()) {
             return;
         }
@@ -114,18 +141,20 @@ public class BaiduLocationManager extends AbsLocationManager {
     // Bug：连续两次（或多次）调用requestLocationUpdates，重复几次，onReceiveLocation的回调次数太多，无规律。。。
     private class InnerLocationListener implements BDLocationListener {
 
-
         @Override
         public void onReceiveLocation(final BDLocation bdLocation) {
             Log.d(TAG, BaiduLocationUtil.getLocStr(bdLocation));
 
-            stopLocation();
+            if (!isContinuous) {
+                stopLocation();
+            }
 
             if (bdLocation == null) {
+                stopLocation();
                 mainHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        notifyLocationFail(LocationType.BAIDU, LocationErrorType.UNKNOWN, "定位失败，location == null");
+                        notifyLocationFail(LocationErrorType.UNKNOWN, "定位失败，location == null");
                     }
                 });
                 return;
@@ -134,21 +163,25 @@ public class BaiduLocationManager extends AbsLocationManager {
             // 61: GPS定位结果，GPS定位成功
             // 161: 网络定位结果，网络定位成功
             if (bdLocation.getLocType() == 61 || bdLocation.getLocType() == 161) {
+                final Location location = BaiduLocationUtil.parse(bdLocation);
                 mainHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        notifyLocationSuccess(LocationType.BAIDU, BaiduLocationUtil.parse(bdLocation));
+                        notifyLocationSuccess(location);
                     }
                 });
+
                 return;
             }
+
+            stopLocation();
 
             final LocationErrorType errorType = BaiduLocationUtil.getErrorTypeByCode(bdLocation.getLocType());
             final String errorReason = BaiduLocationUtil.getReasonByCode(bdLocation.getLocType());
             mainHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    notifyLocationFail(LocationType.BAIDU, errorType, errorReason);
+                    notifyLocationFail(errorType, errorReason);
                 }
             });
         }

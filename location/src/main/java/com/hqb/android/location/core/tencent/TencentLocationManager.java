@@ -1,20 +1,16 @@
 package com.hqb.android.location.core.tencent;
 
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.hqb.android.location.AbsLocationManager;
+import com.hqb.android.location.Location;
 import com.hqb.android.location.LocationErrorType;
-import com.hqb.android.location.LocationListener;
 import com.hqb.android.location.LocationType;
 import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationRequest;
-
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by heqingbao on 2017/3/15.
@@ -35,10 +31,7 @@ public class TencentLocationManager extends AbsLocationManager {
     private boolean wifiStatusDenied;// wifi模块被关闭
     private boolean gpsStatusDenied;// gps模块被关闭
 
-    private Timer timer;
-    private volatile boolean isRequesting;
-
-    private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean isRequesting;
 
     public static TencentLocationManager getInstance(Context context) {
         if (instance == null) {
@@ -54,26 +47,40 @@ public class TencentLocationManager extends AbsLocationManager {
         locationManager.setCoordinateType(com.tencent.map.geolocation.TencentLocationManager.COORDINATE_TYPE_GCJ02);
     }
 
+    @NonNull
     @Override
-    public void requestLocationOnce(final LocationListener listener) {
-        super.requestLocationOnce(listener);
+    protected LocationType getLocationType() {
+        return LocationType.TENCENT;
+    }
+
+    @Override
+    public void startLocationContinuous() {
+
+        Log.d(TAG, ">>> 开始持续请求位置（如果是单次定位，位置请求成功后会关闭请求） <<<");
+
+        if (isRequesting) {
+            Log.d(TAG, "正在请求位置，略过本次请求！！！");
+            return;
+        }
+
+        isRequesting = true;
 
         resetStatus();
 
         TencentLocationRequest request = TencentLocationRequest.create();
 
-        // 包含经纬度, 位置名称, 位置地址
-        request.setRequestLevel(1);
+        // 包含经纬度，位置所处的中国大陆行政区划
+        request.setRequestLevel(3);
 
         // 设置定位周期(位置监听器回调周期), 单位为 ms (毫秒)
         // 未提供单次定位api，这里在获取到位置到主动调用stop
-        request.setInterval(10000);
+        request.setInterval(SCAN_INTERVAL);
 
         // 禁用缓存
         request.setAllowCache(false);
 
         // 是否允许使用GPS定位
-        request.setAllowGPS(false);
+        request.setAllowGPS(true);
 
         locParams = request.toString() + ", 坐标系=" + TencentLocationUtil.toString(locationManager.getCoordinateType());
 
@@ -82,41 +89,22 @@ public class TencentLocationManager extends AbsLocationManager {
 
         if (result != 0) {
             // 注册失败
-            notifyLocationFail(LocationType.TENCENT, LocationErrorType.UNKNOWN, TencentLocationUtil.initResultByCode(result));
+            notifyLocationFail(LocationErrorType.UNKNOWN, TencentLocationUtil.initResultByCode(result));
         }
+    }
 
-        // 连续几次定位请求后，回调非常慢，但是，在请求过程中，再次requestLocation会很快得到结果。
-        // 所以这里间隔5秒后仍未回调，就自动再触发一次。经测试可以满足大部分需求。
-        if (isRequesting) {
-            return;
-        }
+    @Override
+    public void startLocationOnce() {
+        Log.d(TAG, ">>> 开始请求位置 <<<");
 
-        timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if (isRequesting) {
-                    Log.d(TAG, "超时，重试！");
-
-                    mainHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            requestLocationOnce(listener);
-                        }
-                    });
-                }
-            }
-        }, 5000);
-
-        isRequesting = true;
+        startLocationContinuous();
     }
 
     @Override
     public void stopLocation() {
+        Log.d(TAG, ">>> 停止请求位置 <<<");
+
         isRequesting = false;
-        if (timer != null) {
-            timer.cancel();
-        }
 
         if (locationManager == null) {
             return;
@@ -139,25 +127,37 @@ public class TencentLocationManager extends AbsLocationManager {
     // Bug：连续两次调用requestLocationUpdates，重复两次，第三次不会调用onLocationChanged方法，而是下一次调用requestLocationUpdates的时候一起回调。。。
     private class InnerLocationListener implements TencentLocationListener {
 
+        private volatile boolean isPermissionDeny = false;
+
+        public InnerLocationListener() {
+            isPermissionDeny = false;
+        }
+
         @Override
-        public void onLocationChanged(TencentLocation location, int error, String reason) {
-            String result = TencentLocationUtil.getLocStr(locParams, location, error, reason);
-            Log.d(TAG, result);
+        public void onLocationChanged(TencentLocation tLocation, int error, String reason) {
+            Log.d(TAG, TencentLocationUtil.getLocStr(locParams, tLocation, error, reason));
 
-            stopLocation();
+            if (!isContinuous) {
+                stopLocation();
+            }
 
-            if (listeners.isEmpty()) {
+            if (isPermissionDeny) {
+                stopLocation();
+                notifyLocationFail(LocationErrorType.NO_PERMISSION, "蜂窝、WIFI、GPS模块都没打开");
                 return;
             }
 
             if (error == TencentLocation.ERROR_OK) { // 定位成功
-                notifyLocationSuccess(LocationType.TENCENT, TencentLocationUtil.parse(location));
+                Location location = TencentLocationUtil.parse(tLocation);
+                notifyLocationSuccess(location);
                 return;
             }
 
+            stopLocation();
+
             LocationErrorType errorType = TencentLocationUtil.getErrorTypeByCode(error);
             String errorReason = TencentLocationUtil.getReasonByErrorCode(error);
-            notifyLocationFail(LocationType.TENCENT, errorType, errorReason);
+            notifyLocationFail(errorType, errorReason);
         }
 
         /**
@@ -191,10 +191,9 @@ public class TencentLocationManager extends AbsLocationManager {
                           at android.location.LocationManager$ListenerTransport._handleMessage(LocationManager.java:299)
 
                 暂不清楚异常原因。
-                这里调用完notifyLocationFail后会移除所有的listener，待onLocationChanged方法回调的时候做处理！！！
                 */
 
-                notifyLocationFail(LocationType.TENCENT, LocationErrorType.NO_PERMISSION, "蜂窝、WIFI、GPS模块都没打开");
+                isPermissionDeny = true;
             }
         }
     }

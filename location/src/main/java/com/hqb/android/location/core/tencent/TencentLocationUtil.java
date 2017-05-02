@@ -18,11 +18,14 @@ public class TencentLocationUtil {
             // 定位成功
             StringBuilder sb = new StringBuilder();
             sb.append("定位参数=").append(params).append("\n");
-            sb.append("(纬度=").append(location.getLatitude()).append(",经度=")
-                    .append(location.getLongitude()).append(",精度=")
-                    .append(location.getAccuracy()).append("), 来源=")
-                    .append(location.getProvider()).append(", 地址=")
-                    .append(location.getAddress());
+            sb.append("纬度=").append(location.getLatitude()).append("\n")
+                    .append("经度=").append(location.getLongitude()).append("\n")
+                    .append("精度=").append(location.getAccuracy()).append("\n")
+                    .append("来源=").append(location.getProvider()).append("\n")
+                    .append("省=").append(location.getProvince()).append("\n")
+                    .append("城市=").append(location.getCity()).append("\n")
+                    .append("行政区=").append(location.getDistrict()).append("\n")
+                    .append("地址=").append(location.getAddress());
 
             return sb.toString();
         }
@@ -42,10 +45,31 @@ public class TencentLocationUtil {
 
     @NonNull
     public static Location parse(@NonNull TencentLocation location) {
-        double longitude = location.getLongitude();
-        double latitude = location.getLatitude();
+        Location loc = new Location(location.getLongitude(), location.getLatitude());
+        loc.setProvince(location.getProvince());
+        loc.setCity(location.getCity());
+        loc.setDistrict(location.getDistrict());
+        loc.setStreet(location.getStreet());
+        loc.setStreetNo(location.getStreetNo());
+
+        // RequestLevel=1：包含经纬度, 位置名称, 位置地址
+        // RequestLevel=3：包含经纬度，位置所处的中国大陆行政区划
+        // 1的时候有address信息，但是没有province/city/district/street等信息
+        // 3的时候没有address信息，但有province/city/district/street等信息
+        // 所以这里使用3，address由我们手动拼装！！！
+        // http://lbs.qq.com/geo/guide-use.html
         String address = location.getAddress();
-        Location loc = new Location(longitude, latitude, address);
+        if (address == null || address.equals("")) {
+            address = new StringBuilder()
+                    .append(location.getProvince())
+                    .append(location.getCity())
+                    .append(location.getDistrict())
+                    .append(location.getStreet())
+                    .append(location.getStreetNo())
+                    .toString();
+        }
+
+        loc.setAddress(address);
 
         // location.getTime()
         // 返回当前位置的生成时间.

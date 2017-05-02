@@ -107,11 +107,13 @@ public class BaiduLocationUtil {
 
     @NonNull
     public static Location parse(@NonNull BDLocation location) {
-        double longitude = location.getLongitude();
-        double latitude = location.getLatitude();
-        String address = location.getAddrStr();
-
-        Location loc = new Location(longitude, latitude, address);
+        Location loc = new Location(location.getLongitude(), location.getLatitude());
+        loc.setProvince(location.getProvince());
+        loc.setCity(location.getCity());
+        loc.setDistrict(location.getDistrict());
+        loc.setStreet(location.getStreet());
+        loc.setStreetNo(location.getStreetNumber());
+        loc.setAddress(location.getAddrStr());
         try {
             // server返回的当前定位时间
             // http://wiki.lbsyun.baidu.com/cms/androidloc/doc/v7.1/index.html
